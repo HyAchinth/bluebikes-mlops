@@ -28,7 +28,9 @@ jobs:
           [ -f services/api/requirements.txt ] && pip install -r services/api/requirements.txt || true
 
       - name: Run tests
-        run: pytest -q
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: python -m pytest -q
 
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
