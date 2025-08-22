@@ -1,0 +1,5 @@
+﻿pandas
+requests
+fastapi
+uvicorn
+pytest
