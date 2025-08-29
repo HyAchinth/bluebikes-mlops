@@ -12,6 +12,7 @@ model/registry/
 airflow/logs/
 airflow/tmp/
 airflow/.env
+airflow/pgdata/
 
 .vscode/
 .DS_Store
