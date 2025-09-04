@@ -9,7 +9,7 @@ services:
     volumes:
       - ./pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      test: [ "CMD-SHELL", "pg_isready -U airflow" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -25,7 +25,7 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       AIRFLOW__CORE__DEFAULT_TIMEZONE: America/New_York
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
       PYTHONPATH: /workspace
       PIP_USER: "false"
     ports:
@@ -37,14 +37,5 @@ services:
       - ./requirements.txt:/opt/airflow/requirements.txt
       - ../:/workspace
     command: >
-      bash -lc "\
-      pip install --no-cache-dir -r /opt/airflow/requirements.txt && \
-      airflow db migrate && \
-      airflow users create \
-      --username ${_AIRFLOW_WWW_USER_USERNAME} \
-      --password ${_AIRFLOW_WWW_USER_PASSWORD} \
-      --firstname Admin --lastname User \
-      --role Admin --email admin@example.com || true && \
-      airflow webserver --port 8080 & \
-      exec airflow scheduler"
+      bash -lc "\ pip install --no-cache-dir -r /opt/airflow/requirements.txt && \ airflow db migrate && \ airflow users create \ --username ${_AIRFLOW_WWW_USER_USERNAME} \ --password ${_AIRFLOW_WWW_USER_PASSWORD} \ --firstname Admin --lastname User \ --role Admin --email admin@example.com || true && \ airflow webserver --port 8080 & \ exec airflow scheduler"
     restart: unless-stopped
