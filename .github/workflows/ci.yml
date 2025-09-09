@@ -11,6 +11,53 @@ permissions:
   packages: write
 
 jobs:
+  airflow-dag-tests:
+    name: Airflow DAG import tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare .env for Airflow
+        working-directory: airflow
+        run: |
+          cp .env.example .env
+          sed -i 's/^OWM_API_KEY=.*/OWM_API_KEY=dummykey123/' .env
+
+      - name: Start Airflow (Docker Compose)
+        working-directory: airflow
+        run: docker compose up -d --build
+
+      - name: Install pytest in container
+        run: docker compose -f airflow/docker-compose.yml exec -T airflow python -m pip install -q pytest
+
+      - name: Copy repo bits into container (tests + airflow/)
+        run: |
+          docker compose -f airflow/docker-compose.yml cp tests airflow:/opt/airflow/tests
+          docker compose -f airflow/docker-compose.yml cp airflow airflow:/opt/airflow/airflow
+
+      - name: Run DAG tests inside container
+        run: |
+          docker compose -f airflow/docker-compose.yml exec -T airflow bash -lc '
+            export AIRFLOW__CORE__BASE_LOG_FOLDER=/tmp/airflow_logs
+            export AIRFLOW__LOGGING__BASE_LOG_FOLDER=/tmp/airflow_logs
+            export AIRFLOW__SCHEDULER__CHILD_PROCESS_LOG_DIRECTORY=/tmp/airflow_logs/scheduler
+            export AIRFLOW__LOGGING__PROCESSOR_LOG_LOCATION="/tmp/airflow_logs/scheduler/%(ds)s"
+            mkdir -p /tmp/airflow_logs/scheduler
+            python -m pytest -q /opt/airflow/tests/test_dags.py
+          '
+
+      - name: Show logs on failure
+        if: failure()
+        working-directory: airflow
+        run: |
+          docker compose ps
+          docker compose logs --tail=200 airflow || true
+          docker compose logs --tail=200 airflow-postgres || true
+
+      - name: Teardown
+        if: always()
+        working-directory: airflow
+        run: docker compose down -v
   test-and-build:
     name: ci
     runs-on: ubuntu-latest
@@ -27,10 +74,10 @@ jobs:
           pip install -r requirements.txt
           [ -f services/api/requirements.txt ] && pip install -r services/api/requirements.txt || true
 
-      - name: Run tests
+      - name: Run tests (exclude Airflow DAG tests)
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: python -m pytest -q
+        run: python -m pytest -q --ignore=tests/test_dags.py
 
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
