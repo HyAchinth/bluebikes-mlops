@@ -12,38 +12,38 @@ permissions:
 
 jobs:
   airflow-dag-tests:
-  name: Airflow DAG import tests
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v4
+    name: Airflow DAG import tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Prepare .env for Airflow
-      working-directory: airflow
-      run: |
-        cp .env.example .env
-        # Use a dummy key; no real API calls during import tests
-        sed -i 's/^OWM_API_KEY=.*/OWM_API_KEY=dummykey123/' .env
+      - name: Prepare .env for Airflow
+        working-directory: airflow
+        run: |
+          cp .env.example .env
+          # Use a dummy key; no real API calls during import tests
+          sed -i 's/^OWM_API_KEY=.*/OWM_API_KEY=dummykey123/' .env
 
-    - name: Start Airflow (Docker Compose)
-      working-directory: airflow
-      run: docker compose up -d --build
+      - name: Start Airflow (Docker Compose)
+        working-directory: airflow
+        run: docker compose up -d --build
 
-    - name: Run DAG tests inside container
-      working-directory: airflow
-      run: docker compose exec airflow bash -lc "pytest -q /workspace/tests/test_dags.py"
+      - name: Run DAG tests inside container
+        working-directory: airflow
+        run: docker compose exec airflow bash -lc "pytest -q /workspace/tests/test_dags.py"
 
-    - name: Show logs on failure
-      if: failure()
-      working-directory: airflow
-      run: |
-        docker compose ps
-        docker compose logs --tail=200 airflow || true
-        docker compose logs --tail=200 airflow-postgres || true
+      - name: Show logs on failure
+        if: failure()
+        working-directory: airflow
+        run: |
+          docker compose ps
+          docker compose logs --tail=200 airflow || true
+          docker compose logs --tail=200 airflow-postgres || true
 
-    - name: Teardown
-      if: always()
-      working-directory: airflow
-      run: docker compose down -v
+      - name: Teardown
+        if: always()
+        working-directory: airflow
+        run: docker compose down -v
   test-and-build:
     name: ci
     runs-on: ubuntu-latest
