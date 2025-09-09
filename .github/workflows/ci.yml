@@ -41,7 +41,9 @@ jobs:
       - name: Run DAG tests inside container
         run: |
           docker compose -f airflow/docker-compose.yml exec -T airflow bash -lc '
+            export AIRFLOW__CORE__BASE_LOG_FOLDER=/tmp/airflow_logs
             export AIRFLOW__LOGGING__BASE_LOG_FOLDER=/tmp/airflow_logs
+            export AIRFLOW__SCHEDULER__CHILD_PROCESS_LOG_DIRECTORY=/tmp/airflow_logs/scheduler
             export AIRFLOW__LOGGING__PROCESSOR_LOG_LOCATION="/tmp/airflow_logs/scheduler/%(ds)s"
             mkdir -p /tmp/airflow_logs/scheduler
             python -m pytest -q /opt/airflow/tests/test_dags.py
