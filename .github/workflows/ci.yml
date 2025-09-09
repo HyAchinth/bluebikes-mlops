@@ -28,9 +28,19 @@ jobs:
         working-directory: airflow
         run: docker compose up -d --build
 
+      # Copy tests into the container in case /workspace isn't mounted
+      - name: Copy tests into container
+        run: |
+          docker compose -f airflow/docker-compose.yml cp tests airflow:/opt/airflow/tests
+
+      - name: Install pytest in container
+        run: |
+          # use --user to avoid needing root; works in the official Airflow image
+          docker compose -f airflow/docker-compose.yml exec -T airflow python -m pip install --user -q pytest
+
       - name: Run DAG tests inside container
-        working-directory: airflow
-        run: docker compose exec airflow bash -lc "pytest -q /workspace/tests/test_dags.py"
+        run: |
+          docker compose -f airflow/docker-compose.yml exec -T airflow python -m pytest -q /opt/airflow/tests/test_dags.py
 
       - name: Show logs on failure
         if: failure()
@@ -60,10 +70,10 @@ jobs:
           pip install -r requirements.txt
           [ -f services/api/requirements.txt ] && pip install -r services/api/requirements.txt || true
 
-      - name: Run tests
+      - name: Run tests (exclude Airflow DAG tests)
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: python -m pytest -q
+        run: python -m pytest -q --ignore=tests/test_dags.py
 
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
