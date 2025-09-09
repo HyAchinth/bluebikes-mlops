@@ -36,7 +36,7 @@ jobs:
       - name: Install pytest in container
         run: |
           # use --user to avoid needing root; works in the official Airflow image
-          docker compose -f airflow/docker-compose.yml exec -T airflow python -m pip install --user -q pytest
+          docker compose -f airflow/docker-compose.yml exec -T airflow python -m pip install -q pytest
 
       - name: Run DAG tests inside container
         run: |
