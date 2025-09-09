@@ -40,7 +40,10 @@ jobs:
 
       - name: Run DAG tests inside container
         run: |
-          docker compose -f airflow/docker-compose.yml exec -T airflow python -m pytest -q /opt/airflow/tests/test_dags.py
+          docker compose -f airflow/docker-compose.yml exec -T \
+            -e AIRFLOW__LOGGING__BASE_LOG_FOLDER=/tmp/airflow_logs \
+            -e AIRFLOW__LOGGING__PROCESSOR_LOG_LOCATION=/tmp/airflow_logs/scheduler/%(ds)s \
+            airflow bash -lc "mkdir -p /tmp/airflow_logs/scheduler && python -m pytest -q /opt/airflow/tests/test_dags.py"
 
       - name: Show logs on failure
         if: failure()
