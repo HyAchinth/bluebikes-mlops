@@ -21,22 +21,19 @@ jobs:
         working-directory: airflow
         run: |
           cp .env.example .env
-          # Use a dummy key; no real API calls during import tests
           sed -i 's/^OWM_API_KEY=.*/OWM_API_KEY=dummykey123/' .env
 
       - name: Start Airflow (Docker Compose)
         working-directory: airflow
         run: docker compose up -d --build
 
-      # Copy tests into the container in case /workspace isn't mounted
-      - name: Copy tests into container
+      - name: Install pytest in container
+        run: docker compose -f airflow/docker-compose.yml exec -T airflow python -m pip install -q pytest
+
+      - name: Copy repo bits into container (tests + airflow/)
         run: |
           docker compose -f airflow/docker-compose.yml cp tests airflow:/opt/airflow/tests
-
-      - name: Install pytest in container
-        run: |
-          # use --user to avoid needing root; works in the official Airflow image
-          docker compose -f airflow/docker-compose.yml exec -T airflow python -m pip install -q pytest
+          docker compose -f airflow/docker-compose.yml cp airflow airflow:/opt/airflow/airflow
 
       - name: Run DAG tests inside container
         run: |
